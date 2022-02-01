@@ -14,17 +14,13 @@ import operator
 
 import pytest
 
-from aiida.orm import Bool, Float, Int, NumericType, Str, load_node
+from aiida.orm import Bool, Complex, Float, Int, NumericType, Str, load_node
 
 
 @pytest.mark.usefixtures('clear_database_before_test')
 @pytest.mark.parametrize(
-    'node_type, default, value', [
-        (Bool, False, True),
-        (Int, 0, 5),
-        (Float, 0.0, 5.5),
-        (Str, '', 'a'),
-    ]
+    'node_type, default, value', [(Bool, False, True), (Int, 0, 5), (Float, 0.0, 5.5), (Str, '', 'a'),
+                                  (Complex, 0.0 + 0.0j, 5.5 + 4.5j)]
 )
 def test_create(node_type, default, value):
     """Test the creation of the ``BaseType`` nodes."""
@@ -37,7 +33,7 @@ def test_create(node_type, default, value):
 
 
 @pytest.mark.usefixtures('clear_database_before_test')
-@pytest.mark.parametrize('node_type', [Bool, Float, Int, Str])
+@pytest.mark.parametrize('node_type', [Bool, Float, Int, Str, Complex])
 def test_store_load(node_type):
     """Test ``BaseType`` node storing and loading."""
     node = node_type()
@@ -64,6 +60,7 @@ def test_modulo():
 @pytest.mark.parametrize('node_type, a, b', [
     (Int, 3, 5),
     (Float, 1.2, 5.5),
+    (Complex, 1.2 + 0.5j, 5.5 - 4.5j),
 ])
 def test_add(node_type, a, b):
     """Test addition for ``Int`` and ``Float`` nodes."""
@@ -94,6 +91,7 @@ def test_add(node_type, a, b):
 @pytest.mark.parametrize('node_type, a, b', [
     (Int, 3, 5),
     (Float, 1.2, 5.5),
+    (Complex, 1.2 + 0.5j, 5.5 - 4.5j),
 ])
 def test_multiplication(node_type, a, b):
     """Test floats multiplication."""
@@ -125,6 +123,7 @@ def test_multiplication(node_type, a, b):
 @pytest.mark.parametrize('node_type, a, b', [
     (Int, 3, 5),
     (Float, 1.2, 5.5),
+    (Complex, 1.2 + 0.5j, 5.5 - 4.5j),
 ])
 @pytest.mark.usefixtures('clear_database_before_test')
 def test_division(node_type, a, b):
@@ -157,6 +156,7 @@ def test_division_integer(node_type, a, b):
 @pytest.mark.parametrize('node_type, base, power', [
     (Int, 5, 2),
     (Float, 3.5, 3),
+    (Complex, 1.2 + 0.5j, 5.5 - 4.5j),
 ])
 def test_power(node_type, base, power):
     """Test power operator."""
@@ -208,12 +208,53 @@ def test_operator(opera):
 
 
 @pytest.mark.usefixtures('clear_database_before_test')
-@pytest.mark.parametrize('node_type, a, b', [
-    (Bool, False, True),
-    (Int, 2, 5),
-    (Float, 2.5, 5.5),
-    (Str, 'a', 'b'),
-])
+@pytest.mark.parametrize(
+    'opera', [
+        operator.add, operator.mul, operator.pow, operator.iadd,
+        operator.imul
+    ]
+)
+def test_operator_int_complex(opera):
+    """Test operations between Int and Float objects."""
+    node_a = Complex(2.2 + 2j)
+    node_b = Int(3)
+
+    for node_x, node_y in [(node_a, node_b), (node_b, node_a)]:
+        res = opera(node_x, node_y)
+        c_val = opera(node_x.value, node_y.value)
+        assert res._type == type(c_val)  # pylint: disable=protected-access
+        assert res == opera(node_x.value, node_y.value)
+
+
+@pytest.mark.usefixtures('clear_database_before_test')
+@pytest.mark.parametrize(
+    'opera', [
+        operator.add, operator.mul, operator.pow, operator.iadd,
+        operator.imul
+    ]
+)
+def test_operator_float_complex(opera):
+    """Test operations between Int and Float objects."""
+    node_a = Complex(2.2 + 2j)
+    node_b = Float(2.2)
+
+    for node_x, node_y in [(node_a, node_b), (node_b, node_a)]:
+        res = opera(node_x, node_y)
+        c_val = opera(node_x.value, node_y.value)
+        assert res._type == type(c_val)  # pylint: disable=protected-access
+        assert res == opera(node_x.value, node_y.value)
+
+
+@pytest.mark.usefixtures('clear_database_before_test')
+@pytest.mark.parametrize(
+    'node_type, a, b', [
+        (Bool, False, True),
+        (Int, 2, 5),
+        (Float, 2.5, 5.5),
+        (Str, 'a', 'b'),
+        (Complex, 1.2 + 0.5j, 5.5 - 4.5j),
+    ]
+)
 def test_equality(node_type, a, b):
     """Test equality comparison for the base types."""
     node_a = node_type(a)

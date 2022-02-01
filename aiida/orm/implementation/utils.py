@@ -11,6 +11,7 @@
 from collections.abc import Iterable, Mapping
 from decimal import Decimal
 import math
+import cmath
 import numbers
 
 from aiida.common import exceptions
@@ -91,6 +92,15 @@ def clean_value(value):
                 # smaller numbers than python+[SQL+JSONB] would do (the AiiDA float precision is here 14), so the
                 # results are consistent, and the hashing will work also after a round trip as expected.
                 return int(new_val)
+            return new_val
+
+        if isinstance(val, numbers.Complex) and (cmath.isnan(val) or cmath.isinf(val)):
+            # see https://www.postgresql.org/docs/current/static/datatype-json.html#JSON-TYPE-MAPPING-TABLE
+            raise exceptions.ValidationError('nan and inf/-inf can not be serialized to the database')
+
+        if isinstance(val, numbers.Complex):
+            string_representation = f'{{:.{AIIDA_FLOAT_PRECISION}g}}'.format(val)
+            new_val = complex(string_representation)
             return new_val
 
         # Anything else we do not understand and we refuse

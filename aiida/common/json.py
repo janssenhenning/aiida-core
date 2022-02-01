@@ -18,6 +18,21 @@ import simplejson
 JSONEncoder = simplejson.JSONEncoder
 
 
+def _as_complex(dct):
+    if '__complex__' in dct:
+        return complex(dct['real'], dct['imag'])
+    return dct
+
+
+class ComplexEncoder(JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, complex):
+            return {'__complex__': True, 'real': obj.real, 'imag': obj.imag}
+        # Let the base class default method raise the TypeError
+        return JSONEncoder.default(self, obj)
+
+
 def dump(data, fhandle, **kwargs):
     """
     Write JSON encoded 'data' to a file-like object, fhandle
@@ -30,7 +45,7 @@ def dump(data, fhandle, **kwargs):
     """
     import codecs
     utf8writer = codecs.getwriter('utf8')
-    simplejson.dump(data, utf8writer(fhandle), ensure_ascii=False, encoding='utf8', **kwargs)
+    simplejson.dump(data, utf8writer(fhandle), ensure_ascii=False, encoding='utf8', cls=ComplexEncoder, **kwargs)
 
 
 def dumps(data, **kwargs):
@@ -42,7 +57,7 @@ def dumps(data, **kwargs):
     as this improves the readability of the json and reduces the file size.
     When writing to file, use open(filename, 'w', encoding='utf8')
     """
-    return simplejson.dumps(data, ensure_ascii=False, encoding='utf8', **kwargs)
+    return simplejson.dumps(data, ensure_ascii=False, encoding='utf8', cls=ComplexEncoder, **kwargs)
 
 
 def load(fhandle, **kwargs):
@@ -54,7 +69,7 @@ def load(fhandle, **kwargs):
     :raises ValueError: if no valid JSON object could be decoded
     """
     try:
-        return simplejson.load(fhandle, encoding='utf8', **kwargs)
+        return simplejson.load(fhandle, encoding='utf8', object_hook=_as_complex, **kwargs)
     except simplejson.errors.JSONDecodeError:
         raise ValueError
 
@@ -66,6 +81,6 @@ def loads(json_string, **kwargs):
     :raises ValueError: if no valid JSON object could be decoded
     """
     try:
-        return simplejson.loads(json_string, encoding='utf8', **kwargs)
+        return simplejson.loads(json_string, encoding='utf8', object_hook=_as_complex, **kwargs)
     except simplejson.errors.JSONDecodeError:
         raise ValueError

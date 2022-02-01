@@ -45,6 +45,7 @@ __all__ = (
     'CodeEntityLoader',
     'Collection',
     'Comment',
+    'Complex',
     'Computer',
     'ComputerEntityLoader',
     'DESCENDING',
