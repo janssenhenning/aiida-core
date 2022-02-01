@@ -133,7 +133,7 @@ def test_division(node_type, a, b):
 
     result = node_a / node_b
     assert result == a / b
-    assert isinstance(result, Float)  # Should be a `Float` for both node types
+    assert isinstance(result, node_type if node_type is not Int else Float)  # Should be a `Float` for both node types
 
 
 @pytest.mark.usefixtures('clear_database_before_test')
